@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -28,12 +31,24 @@ func main() {
 }
 
 func checkLink(link string, c chan string) {
-	_, err := http.Get(link)
+	resp, err := http.Get(link)
 	if err != nil {
 		fmt.Println(link + " está KO")
 		c <- link
 		return
 	}
-	fmt.Println(link + " está OK")
+	defer resp.Body.Close()
+	fmt.Printf("%s está OK, status: %d\n", link, resp.StatusCode)
+	if resp.StatusCode == 200 {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		file := strings.Split(link, "//")[1]
+		file += ".txt"
+		fmt.Printf("Guardando el body como %s\n", file)
+
+		err = os.WriteFile(file, bodyBytes, 0664)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 	c <- link
 }
