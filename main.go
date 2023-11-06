@@ -12,16 +12,22 @@ func main() {
 		"http://google.com",
 	}
 
+	c := make(chan string)
+
 	for _, link := range links {
-		checkLink(link)
+		go checkLink(link, c)
+	}
+
+	for i := 0; i < len(links); i++ {
+		fmt.Println(<-c)
 	}
 }
 
-func checkLink(link string) {
+func checkLink(link string, c chan string) {
 	_, err := http.Get(link)
 	if err != nil {
-		fmt.Println(link + " puede que esté caido")
+		c <- link + " está KO"
 		return
 	}
-	fmt.Println(link + " está funcionando")
+	c <- link + " está OK"
 }
