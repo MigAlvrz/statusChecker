@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
-	"time"
+	"sync"
 )
 
 func main() {
@@ -14,27 +16,24 @@ func main() {
 		"https://www.twave.io",
 		"https://golang.org",
 		"http://google.com",
+		"http://medium.com",
 	}
 
-	c := make(chan string)
+	var wg sync.WaitGroup
+
+	wg.Add(len(links))
 
 	for _, link := range links {
-		go checkLink(link, c)
+		go checkAndSaveLink(link, &wg)
 	}
-
-	for l := range c {
-		go func(l string) {
-			time.Sleep(600 * time.Second)
-			go checkLink(l, c)
-		}(l)
-	}
+	fmt.Println("No. rutinas activas:", runtime.NumGoroutine())
+	wg.Wait()
 }
 
-func checkLink(link string, c chan string) {
+func checkAndSaveLink(link string, wg *sync.WaitGroup) {
 	resp, err := http.Get(link)
 	if err != nil {
 		fmt.Println(link + " está KO")
-		c <- link
 		return
 	}
 	defer resp.Body.Close()
@@ -44,11 +43,10 @@ func checkLink(link string, c chan string) {
 		file := strings.Split(link, "//")[1]
 		file += ".txt"
 		fmt.Printf("Guardando el body como %s\n", file)
-
 		err = os.WriteFile(file, bodyBytes, 0664)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 	}
-	c <- link
+	wg.Done()
 }
