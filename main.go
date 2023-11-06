@@ -41,7 +41,7 @@ func checkAndSaveLink(link string, wg *sync.WaitGroup) {
 	if resp.StatusCode == 200 {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		file := strings.Split(link, "//")[1]
-		file += ".txt"
+		file += ".html"
 		fmt.Printf("Guardando el body como %s\n", file)
 		err = os.WriteFile(file, bodyBytes, 0664)
 		if err != nil {
